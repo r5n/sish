@@ -7,4 +7,6 @@ struct sish_opt {
     char *run;
 };
 
+int parse_expr();
+
 #endif

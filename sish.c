@@ -18,7 +18,7 @@ main(int argc, char **argv)
     setprogname(argv[0]);
     
     if ((opts = malloc(sizeof(struct sish_opt))) == NULL) {
-	fprintf(stderr, "%s", strerror(errno));
+	fprintf(stderr, "%s\n", strerror(errno));
 	exit(EXIT_FAILURE);
     }
 
@@ -41,7 +41,13 @@ main(int argc, char **argv)
     if (argc == 1) {
 	opts->run = argv[0];
     }
-    
+
+    while (1) {
+	putchar('$');
+	putchar(' ');
+	(void)parse_expr();
+    }
+
     free(opts);
 }
 
