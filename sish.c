@@ -1,3 +1,4 @@
+#include <err.h>
 #include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -12,7 +13,7 @@ static void usage(void);
 int
 main(int argc, char **argv)
 {
-    int ch;
+    int ch, n;
     struct sish_opt *opts;
     
     setprogname(argv[0]);
@@ -42,11 +43,10 @@ main(int argc, char **argv)
 	opts->run = argv[0];
     }
 
-    while (1) {
-	putchar('$');
-	putchar(' ');
-	(void)parse_expr();
-    }
+    do {
+	printf("sish$ ");
+	n = parse_expr();
+    } while (n != -1);
 
     free(opts);
 }
