@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <err.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -10,7 +11,7 @@
 #define CMDLEN  10
 #define TOKLEN  8
 #define TOKSEP  " \t\r\n"
-#define SPECIAL "&|<>"
+#define SPECIAL " &|<>\n"
 
 void
 tokenize(char *line)
@@ -27,14 +28,15 @@ tokenize(char *line)
     if ((tokens = malloc(sizeof *tokens * CMDLEN)) == NULL)
 	err(EXIT_FAILURE, "malloc");
 
-    for (tok = strtok(str, TOKSEP); tok; tok = strtok(NULL, TOKSEP)) {
-	tokens[idx++] = tok;
+    for (tok = strtok(str, SPECIAL); tok; tok = strtok(NULL, TOKSEP)) {
+	tokens[idx++]= tok;
 	if (idx >= CMDLEN) {
 	    idx *= 2;
-	    if ((tokens = realloc(tokens, sizeof *tokens *idx)) == NULL)
+	    if ((tokens = realloc(tokens, sizeof *tokens * idx)) == NULL)
 		err(EXIT_FAILURE, "realloc");
 	}
     }
+
     for (j = 0; j < idx; ++j) {
 	printf("token: %s\n", tokens[j]);
     }
