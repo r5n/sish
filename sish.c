@@ -1,6 +1,7 @@
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,13 +16,21 @@ main(int argc, char **argv)
 {
     int ch, n;
     struct sish_opt *opts;
+    struct sigaction sa, intsa;
     
     setprogname(argv[0]);
-    
+
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
     if ((opts = malloc(sizeof(struct sish_opt))) == NULL) {
 	fprintf(stderr, "%s\n", strerror(errno));
 	exit(EXIT_FAILURE);
     }
+
+    if (sigaction(SIGINT, &sa, &intsa) == -1)
+	err(1, "unable to handle SIGINT");
 
     while ((ch = getopt(argc, argv, "cx")) != -1) {
 	switch (ch) {
@@ -32,6 +41,8 @@ main(int argc, char **argv)
 	    opts->trace = 1;
 	    break;
 	default:
+	    free(opts);
+	    sigaction(SIGINT, &intsa, NULL);
 	    usage();
 	    /* NOT REACHED */
 	}
@@ -49,6 +60,7 @@ main(int argc, char **argv)
     } while (n != -1);
 
     free(opts);
+    sigaction(SIGINT, &intsa, NULL);
 }
 
 static void

@@ -18,7 +18,7 @@ tokenize(char *line)
 {
     char *str, *tok;
     char **tokens;
-    int idx, j;
+    int idx;
 
     idx = 0;
 
@@ -37,10 +37,6 @@ tokenize(char *line)
 	}
     }
 
-    for (j = 0; j < idx; ++j) {
-	printf("token: %s\n", tokens[j]);
-    }
-
     free(str);
 }
 
@@ -51,13 +47,16 @@ parse_expr(void)
     size_t linecap = 0;
     ssize_t linelen;
 
-    if ((linelen = getline(&line, &linecap, stdin)) > 0) {
-	if (strncmp(line, "exit", 4) == 0)
-	    return -1;
-	fwrite(line, linelen, 1, stdout);
-	tokenize(line);
-    }
+    if ((linelen = getline(&line, &linecap, stdin)) <= 0)
+	return -1;
 
+    if ((strncmp(line, "exit", 4)) == 0)
+	return -1;
+
+    printf("%s", line);
+    tokenize(line);
+
+    
     free(line);
     return 0;
 }
