@@ -12,11 +12,13 @@
 #define CMDLEN  16
 #define SEP     " \t"
 #define SPECIAL "&|<>\n"
+#define SYN_ERR "syntax error near unexpected token"
 
 struct sish_command * command_new(int);
 char **tokenize(char *, int *);
 int parse_tokens(char **, int, struct sish_command *);
 void free_command(struct sish_command *);
+int validate(struct sish_command *);
 
 struct sish_command *
 parse(void)
@@ -36,8 +38,13 @@ parse(void)
     if ((len = getline(&line, &size, stdin)) == -1) {
 	if (errno)
 	    err(EXIT_FAILURE, "getline");
-	
-	return NULL; /* EOF */
+
+	comm->command = "exit";
+	comm->argc = 0;
+	comm->argv = NULL;
+	comm->next = NULL;
+
+	return comm;
     }
 
     tokens = tokenize(line, &toklen);
@@ -121,17 +128,32 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 
     for (i = 0; i < len; i++) {
 	if (cmd) {
-	    if (strpbrk(tokens[i], SPECIAL) != NULL) /* invalid */
+	    if (strpbrk(tokens[i], SPECIAL) != NULL) { /* invalid */
+		fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
+			getprogname(),
+			(*tokens[i] == '\n' ? "newline" : tokens[i]));
 		return -1;
+	    }
 	    curr->command = tokens[i];
 	    cmd = 0;
 	    continue;
 	}
 
 	if (strpbrk(tokens[i], SPECIAL) != NULL) {
+
 	    cmd = 1;
 	    next = command_new(len);
 	    curr->argc = argc;
+	    
+	    if (i == len-1) {
+		if (strncmp(tokens[i], "\n", 1) != 0) {
+		    fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
+			    getprogname(), tokens[i]);
+		    return -1;
+		}
+		break;
+	    }
+
 	    curr->conn = get_connective(tokens[i][0], tokens[i+1][0], &i);
 	    curr->next = next;
 	    curr = next;
@@ -170,12 +192,7 @@ tokenize(char *line, int *toklen)
     while (*str != '\0') {
 	n = strcspn(str, SPECIAL);
 
-	if (strncmp(str + n, "\n", 1) != 0) {
-	    if ((tok = strndup(str + n, 1)) == NULL)
-		err(EXIT_FAILURE, "strndup");
-	}
-	else
-	    tok = NULL;
+	tok = strndup(str + n, 1);
 
 	*(str + n) = '\0';
 
@@ -187,13 +204,12 @@ tokenize(char *line, int *toklen)
 		err(EXIT_FAILURE, "strdup");
 	}
 
-	if (tok) {
-	    grow(&tokens, &idx, &size);
-	    tokens[idx++] = tok;
-	}
+	grow(&tokens, &idx, &size);
+	tokens[idx++] = tok;
+	
 	str += n + 1;
     }
-    
+
     *toklen = idx;
     free(tmp);    
 

@@ -64,9 +64,8 @@ main(int argc, char **argv)
 
     for (;;) {
 	printf("sish$ ");
-	if ((comm = parse()) == NULL) {
-	    printf("\n");
-	    break;
+	if ((comm = parse()) == NULL){
+	    continue;
 	}
 	if (sish_builtin(comm) == 0) {
 	    if (opts->trace == 1)
