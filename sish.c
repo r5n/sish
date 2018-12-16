@@ -15,9 +15,10 @@ static void usage(void);
 int
 main(int argc, char **argv)
 {
-    int ch, n;
+    int ch;
     struct sish_opt *opts;
     struct sigaction sa, intsa;
+    struct sish_command *comm;
     
     setprogname(argv[0]);
 
@@ -26,9 +27,12 @@ main(int argc, char **argv)
     sa.sa_flags = 0;
 
     if ((opts = malloc(sizeof *opts)) == NULL) {
-	fprintf(stderr, "%s\n", strerror(errno));
+	fprintf(stderr, "malloc: %s\n", strerror(errno));
 	exit(EXIT_FAILURE);
     }
+
+    if ((comm = malloc(sizeof *comm)) == NULL)
+	err(EXIT_FAILURE, "malloc");
 
     if (sigaction(SIGINT, &sa, &intsa) == -1)
 	err(1, "unable to handle SIGINT");
@@ -55,14 +59,13 @@ main(int argc, char **argv)
 	opts->run = argv[0];
     }
 
-    n = 0;
-
     do {
 	printf("sish$ ");
-	(void)parse();
-    } while (n != -1);
+	comm = parse();
+    } while (comm != NULL);
 
     free(opts);
+    free(comm);
     sigaction(SIGINT, &intsa, NULL);
 }
 

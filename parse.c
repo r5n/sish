@@ -12,9 +12,15 @@
 #define SEP     " \t"
 #define SPECIAL "&|<>\n"
 
+struct sish_command * command_new(int);
+void grow(char ***, int *, int *);
+char **tokenize(char *, int *);
+int parse_tokens(char **, int, struct sish_command *);
+
 struct sish_command *
 parse(void)
 {
+    int toklen;
     char *line;
     char **tokens;
     size_t size;
@@ -24,8 +30,7 @@ parse(void)
     size = 0;
     line = NULL;
 
-    if ((comm = malloc(sizeof *comm)) == NULL)
-	err(EXIT_FAILURE, "malloc");
+    comm = command_new(CMDLEN);
 
     if ((len = getline(&line, &size, stdin)) == -1) {
 	if (errno)
@@ -34,10 +39,86 @@ parse(void)
 	return NULL; /* EOF */
     }
 
-    tokens = tokenize(line);
+    tokens = tokenize(line, &toklen);
+    if (parse_tokens(tokens, toklen, comm) == -1)
+	return NULL;
 
     free(line);
+    
     return comm;
+}
+
+struct sish_command *
+command_new(int arglen)
+{
+    struct sish_command *comm;
+
+    if ((comm = malloc(sizeof *comm)) == NULL)
+	err(EXIT_FAILURE, "malloc");
+
+    if ((comm->args = calloc(arglen, sizeof *(comm->args))) == NULL)
+	err(EXIT_FAILURE, "calloc");
+
+    comm->command = NULL;
+    comm->next = NULL;
+    comm->conn = -1;
+
+    return comm;
+}
+
+enum sish_conn
+get_connective(char curr, char next, int *consumed)
+{
+    switch (curr) {
+    case '<':
+	return IN;
+    case '>':
+	if (strncmp(&next, ">", 1) == 0) {
+	    (*consumed)++;
+	    return APPEND;
+	}
+	return OUT;
+    case '|':
+	return PIPE;
+    case '&':
+	return BACKGROUND;
+    default:
+	return -1;
+    }
+}
+
+int
+parse_tokens(char **tokens, int len, struct sish_command *comm)
+{
+    int i, cmd, idx;
+    struct sish_command *curr, *next;
+
+    curr = comm;
+    cmd = 1;
+    idx = 0;
+
+    for (i = 0; i < len; i++) {
+	if (cmd) {
+	    if (strpbrk(tokens[i], SPECIAL) != NULL) /* invalid */
+		return -1;
+	    curr->command = tokens[i];
+	    cmd = 0;
+	    continue;
+	}
+
+	if (strpbrk(tokens[i], SPECIAL) != NULL) {
+	    cmd = 1;
+	    next = command_new(len);
+	    curr->conn = get_connective(tokens[i][0], tokens[i+1][0], &i);
+	    curr->next = next;
+	    curr = next;
+	} else {
+	    curr->args[idx] = tokens[i];
+	    idx += 1;
+	}
+    }
+
+    return 1;
 }
 
 void
@@ -51,16 +132,14 @@ grow(char ***tokens, int *len, int *size)
 }
 
 char **
-tokenize(char *line)
+tokenize(char *line, int *toklen)
 {
     char *str, *tok, *sep, *tmp;
     char **tokens;
     int idx, size;;
-    int j;
     size_t n;
 
-    idx = j = 0;
-    n = 0;
+    idx = n = 0;
     size = CMDLEN;
 
     if ((str = strdup(line)) == NULL)
@@ -98,12 +177,8 @@ tokenize(char *line)
 	str += n + 1;
     }
     
-    printf("\n");
-    for (j = 0; j < idx; j++) {
-    	printf("token: %s\n", tokens[j]);
-    }
-
-    free(tmp);
+    *toklen = idx;
+    free(tmp);    
 
     return tokens;
 }
