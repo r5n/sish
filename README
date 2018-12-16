@@ -10,3 +10,4 @@ o	Return [last_status] or 127 after exit.
 o	I/O Redirection -- Initial implementation done.
 o	Pipe's.
 o	Backgrounding.
+o	ls -ld . > file1 -args should not run.
