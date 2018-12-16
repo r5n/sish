@@ -7,6 +7,8 @@
 
 #include "parse.h"
 
+extern int last_status;
+
 int match(const char *, const char *);
 void builtin_cd(const char *);
 void builtin_echo(const char *);
@@ -49,11 +51,22 @@ builtin_cd(const char *path)
 void
 builtin_echo(const char *str)
 {
-    /* TODO: support for printing out exit status of last command */
+    char *evar;
+
     if (match(str, "$$")) {
-	printf("%ld\n", (long)getpid());
-	return;
+	printf("%ld", (long)getpid());
+    } else if (match(str, "$?")) {
+	printf("%d", last_status);
+    } else {
+	if (strncmp(str, "$", 1) == 0) {
+	    if ((evar = getenv(str + 1)) == NULL) {
+		printf("\n");
+	    } else
+		printf("%s", evar);
+	} else
+	    printf("%s", str);
     }
+    printf("\n");
 }
 
 void
@@ -81,4 +94,3 @@ match(const char *src, const char *dest)
 
     return 0;
 }
-

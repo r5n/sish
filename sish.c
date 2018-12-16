@@ -12,6 +12,8 @@
 
 static void usage(void);
 
+int last_status;
+
 int
 main(int argc, char **argv)
 {
@@ -58,6 +60,8 @@ main(int argc, char **argv)
     if (argc == 1) {
 	opts->run = argv[0];
     }
+
+    last_status = 0; /* default */
 
     for (;;) {
 	printf("sish$ ");
