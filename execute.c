@@ -18,9 +18,17 @@
 void
 setup_redirection(struct sish_command *comm, int *fd)
 {
+    char *file;
+
+    if (comm->next == NULL)
+	return;
+
+    if ((file = comm->next->command) == NULL)
+	return;
+
     switch(comm->conn) {
     case IN:
-	if ((*fd = open(comm->next->command, RD_FLAGS)) == -1)
+	if ((*fd = open(file, RD_FLAGS)) == -1)
 	    err(EXIT_FAILURE, "open");
 
 	if (dup2(*fd, STDIN_FILENO) != STDIN_FILENO)
@@ -28,7 +36,7 @@ setup_redirection(struct sish_command *comm, int *fd)
 
 	break;
     case OUT:
-	if ((*fd = open(comm->next->command, WR_FLAGS, DEFAULT_MODE)) == -1)
+	if ((*fd = open(file, WR_FLAGS, DEFAULT_MODE)) == -1)
 	    err(EXIT_FAILURE, "open");
 
 	if (dup2(*fd, STDOUT_FILENO) != STDOUT_FILENO)
@@ -37,7 +45,7 @@ setup_redirection(struct sish_command *comm, int *fd)
 	break;
     case APPEND:
 	printf("append case!\n");
-	if ((*fd = open(comm->next->command, AP_FLAGS, DEFAULT_MODE)) == -1)
+	if ((*fd = open(file, AP_FLAGS, DEFAULT_MODE)) == -1)
 	    err(EXIT_FAILURE, "open");
 
 	if (dup2(*fd, STDOUT_FILENO) != STDOUT_FILENO)
