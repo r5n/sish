@@ -121,6 +121,9 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	}
     }
 
+    curr->argc = argc;
+    curr->next = NULL;
+
     return 1;
 }
 
