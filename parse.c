@@ -56,12 +56,13 @@ command_new(int arglen)
     if ((comm = malloc(sizeof *comm)) == NULL)
 	err(EXIT_FAILURE, "malloc");
 
-    if ((comm->args = calloc(arglen, sizeof *(comm->args))) == NULL)
+    if ((comm->argv = calloc(arglen, sizeof *(comm->argv))) == NULL)
 	err(EXIT_FAILURE, "calloc");
 
     comm->command = NULL;
     comm->next = NULL;
     comm->conn = -1;
+    comm->argc = 0;
 
     return comm;
 }
@@ -90,12 +91,12 @@ get_connective(char curr, char next, int *consumed)
 int
 parse_tokens(char **tokens, int len, struct sish_command *comm)
 {
-    int i, cmd, idx;
+    int i, cmd, idx, argc;
     struct sish_command *curr, *next;
 
     curr = comm;
     cmd = 1;
-    idx = 0;
+    argc = idx = 0;
 
     for (i = 0; i < len; i++) {
 	if (cmd) {
@@ -109,11 +110,13 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	if (strpbrk(tokens[i], SPECIAL) != NULL) {
 	    cmd = 1;
 	    next = command_new(len);
+	    curr->argc = argc;
 	    curr->conn = get_connective(tokens[i][0], tokens[i+1][0], &i);
 	    curr->next = next;
 	    curr = next;
 	} else {
-	    curr->args[idx] = tokens[i];
+	    curr->argv[idx] = tokens[i];
+	    argc += 1;
 	    idx += 1;
 	}
     }
