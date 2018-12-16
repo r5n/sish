@@ -8,6 +8,7 @@ struct sish_opt {
 };
 
 int match(const char *, const char *);
-void builtin(struct sish_command *);
+int sish_builtin(struct sish_command *);
+int sish_execute(struct sish_command *);
 
 #endif

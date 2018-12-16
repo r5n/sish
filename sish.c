@@ -10,6 +10,8 @@
 #include "parse.h"
 #include "extern.h"
 
+#define MAX_ARGLEN 16
+
 static void usage(void);
 
 int last_status;
@@ -32,9 +34,6 @@ main(int argc, char **argv)
 	fprintf(stderr, "malloc: %s\n", strerror(errno));
 	exit(EXIT_FAILURE);
     }
-
-    if ((comm = malloc(sizeof *comm)) == NULL)
-	err(EXIT_FAILURE, "malloc");
 
     if (sigaction(SIGINT, &sa, &intsa) == -1)
 	err(1, "unable to handle SIGINT");
@@ -69,7 +68,9 @@ main(int argc, char **argv)
 	    printf("\n");
 	    break;
 	}
-	builtin(comm);
+	if (sish_builtin(comm) == 0) {
+	    last_status = sish_execute(comm);
+	}
     }
 
     free(opts);

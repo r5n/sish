@@ -14,8 +14,8 @@ void builtin_cd(const char *);
 void builtin_echo(const char *);
 void builtin_exit(void);
 
-void
-builtin(struct sish_command *comm)
+int
+sish_builtin(struct sish_command *comm)
 {
     if (match(comm->command, "exit"))
 	builtin_exit();
@@ -23,20 +23,21 @@ builtin(struct sish_command *comm)
     if (match(comm->command, "cd")) {
 	if (comm->argc > 1) {
 	    fprintf(stderr, "usage: cd [dir]");
-	    return;
+	    return 1;
 	}
 	
 	if (comm->argc == 0)
-	    return;
+	    return 1;
 	
 	builtin_cd((comm->argv)[0]);
-	return;
+	return 1;
     }
 
-    if (match(comm->command, "echo"))
+    if (match(comm->command, "echo")) {
 	builtin_echo((comm->argv)[0]);
-
-    return;
+	return 1;
+    }
+    return 0;
 }
 
 void

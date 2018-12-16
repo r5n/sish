@@ -12,6 +12,7 @@ struct sish_command {
     struct sish_command *next;
 };
 
+struct sish_command *command_new(int);
 struct sish_command *parse(void);
 
 #endif
