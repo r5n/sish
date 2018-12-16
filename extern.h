@@ -7,6 +7,7 @@ struct sish_opt {
     char *run;
 };
 
-int parse_expr();
+int match(const char *, const char *);
+void builtin(struct sish_command *);
 
 #endif

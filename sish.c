@@ -59,10 +59,14 @@ main(int argc, char **argv)
 	opts->run = argv[0];
     }
 
-    do {
+    for (;;) {
 	printf("sish$ ");
-	comm = parse();
-    } while (comm != NULL);
+	if ((comm = parse()) == NULL) {
+	    printf("\n");
+	    break;
+	}
+	builtin(comm);
+    }
 
     free(opts);
     free(comm);
