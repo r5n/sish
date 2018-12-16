@@ -8,9 +8,8 @@
 
 #include "parse.h"
 
-#define CMDLEN  10
-#define TOKLEN  8
-#define TOKSEP  " \t"
+#define CMDLEN  16
+#define SEP     " \t"
 #define SPECIAL "&|<>\n"
 
 struct sish_command *
@@ -41,44 +40,68 @@ parse(void)
     return comm;
 }
 
+void
+grow(char ***tokens, int *len, int *size)
+{
+    if (*len >= *size) {
+	*size *= 2;
+	if ((*tokens = realloc(*tokens, sizeof **tokens * (*size))) == NULL)
+	    err(EXIT_FAILURE, "realloc");
+    }
+}
+
 char **
 tokenize(char *line)
 {
-    char *str, *tok, *sep, *ret, *brk;
+    char *str, *tok, *sep, *tmp;
     char **tokens;
-    int idx, j;
+    int idx, size;;
+    int j;
+    size_t n;
 
     idx = j = 0;
+    n = 0;
+    size = CMDLEN;
 
     if ((str = strdup(line)) == NULL)
 	err(EXIT_FAILURE, "strdup");
 
-    if ((tokens = malloc(sizeof *tokens * CMDLEN)) == NULL)
+    tmp = str;
+
+    if ((tokens = malloc(sizeof *tokens * size)) == NULL)
 	err(EXIT_FAILURE, "malloc");
 
-    /* split line by special characters first
-     * and then split each resulting token by whitespace */
+    while (strlen(str) > 0) {
+	n = strcspn(str, SPECIAL);
 
-    for (tok = strtok_r(str, SPECIAL, &ret); tok;
-	 tok = strtok_r(NULL, SPECIAL, &ret)) {
+	if (strncmp(str + n, "\n", 1) != 0)
+	    tok = strndup(str + n, 1);
+	else
+	    tok = NULL;
 
-	for (sep = strtok_r(tok, TOKSEP, &brk); sep;
-	     sep = strtok_r(NULL, TOKSEP, &brk)) {
+	*(str + n) = '\0';
 
-	    if (idx >= CMDLEN) {
-		idx *= 2;
-		if ((tokens = realloc(tokens, sizeof *tokens * idx)) == NULL)
-		    err(EXIT_FAILURE, "realloc");
-	    }
+	for (sep = strtok(str, SEP); sep; sep = strtok(NULL, SEP)) {
+
+	    grow(&tokens, &idx, &size);
 
 	    if ((tokens[idx++] = strdup(sep)) == NULL)
 		err(EXIT_FAILURE, "strdup");
 	}
+
+	if (tok) {
+	    grow(&tokens, &idx, &size);
+	    tokens[idx++] = tok;
+	}
+	str += n + 1;
     }
     
+    printf("\n");
     for (j = 0; j < idx; j++) {
-	printf("token: %s\n", tokens[j]);
+    	printf("token: %s\n", tokens[j]);
     }
-    
+
+    free(tmp);
+
     return tokens;
 }
