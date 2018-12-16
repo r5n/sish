@@ -69,7 +69,7 @@ main(int argc, char **argv)
 	    break;
 	}
 	if (sish_builtin(comm) == 0) {
-	    if (opts->trace)
+	    if (opts->trace == 1)
 		printf("+ %s\n", comm->command);
 	    last_status = sish_execute(comm);
 	}

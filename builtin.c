@@ -6,10 +6,10 @@
 #include <unistd.h>
 
 #include "parse.h"
+#include "util.h"
 
 extern int last_status;
 
-int match(const char *, const char *);
 void builtin_cd(const char *);
 void builtin_echo(const char *);
 void builtin_exit(void);
@@ -74,24 +74,4 @@ void
 builtin_exit(void)
 {
     exit(EXIT_SUCCESS);
-}
-
-int
-match(const char *src, const char *dest)
-{
-    int slen, dlen;
-
-    if (src == NULL)
-	return 0;
-
-    slen = strlen(src);
-    dlen = strlen(dest);
-
-    if (slen != dlen)
-	return 0;
-
-    if ((strncmp(src, dest, slen)) == 0)
-	return 1;
-
-    return 0;
 }

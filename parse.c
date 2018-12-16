@@ -7,13 +7,13 @@
 #include <unistd.h>
 
 #include "parse.h"
+#include "util.h"
 
 #define CMDLEN  16
 #define SEP     " \t"
 #define SPECIAL "&|<>\n"
 
 struct sish_command * command_new(int);
-void grow(char ***, int *, int *);
 char **tokenize(char *, int *);
 int parse_tokens(char **, int, struct sish_command *);
 
@@ -125,16 +125,6 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
     curr->next = NULL;
 
     return 1;
-}
-
-void
-grow(char ***tokens, int *len, int *size)
-{
-    if (*len >= *size) {
-	*size *= 2;
-	if ((*tokens = realloc(*tokens, sizeof **tokens * (*size))) == NULL)
-	    err(EXIT_FAILURE, "realloc");
-    }
 }
 
 char **
