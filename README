@@ -1,0 +1,13 @@
+sish -- a simple shell
+----------------------
+
+TODO
+----
+
+o	Free all allocated [struct sish_command]
+o	Signal handling in fork/exec.  Let child process decide how it
+	wants to handle SIGINT.
+o	Return [last_status] or 127 after exit.
+o	I/O Redirection
+o	Pipe's
+o	Backgrounding
