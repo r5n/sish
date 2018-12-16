@@ -11,3 +11,4 @@ o	I/O Redirection -- Initial implementation done.
 o	Pipe's.
 o	Backgrounding.
 o	ls -ld . > file1 -args should not run.
+o	Fix error message on Ctrl+D.

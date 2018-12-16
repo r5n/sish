@@ -126,6 +126,9 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
     cmd = 1;
     argc = idx = 0;
 
+    if (len == 1 && strncmp(tokens[0], "\n", 1) == 0)
+	return -1;
+
     for (i = 0; i < len; i++) {
 	if (cmd) {
 	    if (strpbrk(tokens[i], SPECIAL) != NULL) { /* invalid */
