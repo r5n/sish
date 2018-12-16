@@ -71,11 +71,13 @@ tokenize(char *line)
     if ((tokens = malloc(sizeof *tokens * size)) == NULL)
 	err(EXIT_FAILURE, "malloc");
 
-    while (strlen(str) > 0) {
+    while (*str != '\0') {
 	n = strcspn(str, SPECIAL);
 
-	if (strncmp(str + n, "\n", 1) != 0)
-	    tok = strndup(str + n, 1);
+	if (strncmp(str + n, "\n", 1) != 0) {
+	    if ((tok = strndup(str + n, 1)) == NULL)
+		err(EXIT_FAILURE, "strndup");
+	}
 	else
 	    tok = NULL;
 
