@@ -6,21 +6,49 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "extern.h"
+#include "parse.h"
 
 #define CMDLEN  10
 #define TOKLEN  8
-#define TOKSEP  " \t\r\n"
-#define SPECIAL " &|<>\n"
+#define TOKSEP  " \t"
+#define SPECIAL "&|<>\n"
 
-void
+struct sish_command *
+parse(void)
+{
+    char *line;
+    char **tokens;
+    size_t size;
+    ssize_t len;
+    struct sish_command *comm;
+
+    size = 0;
+    line = NULL;
+
+    if ((comm = malloc(sizeof *comm)) == NULL)
+	err(EXIT_FAILURE, "malloc");
+
+    if ((len = getline(&line, &size, stdin)) == -1) {
+	if (errno)
+	    err(EXIT_FAILURE, "getline");
+	
+	return NULL; /* EOF */
+    }
+
+    tokens = tokenize(line);
+
+    free(line);
+    return comm;
+}
+
+char **
 tokenize(char *line)
 {
-    char *str, *tok;
+    char *str, *tok, *sep, *ret, *brk;
     char **tokens;
-    int idx;
+    int idx, j;
 
-    idx = 0;
+    idx = j = 0;
 
     if ((str = strdup(line)) == NULL)
 	err(EXIT_FAILURE, "strdup");
@@ -28,35 +56,29 @@ tokenize(char *line)
     if ((tokens = malloc(sizeof *tokens * CMDLEN)) == NULL)
 	err(EXIT_FAILURE, "malloc");
 
-    for (tok = strtok(str, SPECIAL); tok; tok = strtok(NULL, TOKSEP)) {
-	tokens[idx++]= tok;
-	if (idx >= CMDLEN) {
-	    idx *= 2;
-	    if ((tokens = realloc(tokens, sizeof *tokens * idx)) == NULL)
-		err(EXIT_FAILURE, "realloc");
+    /* split line by special characters first
+     * and then split each resulting token by whitespace */
+
+    for (tok = strtok_r(str, SPECIAL, &ret); tok;
+	 tok = strtok_r(NULL, SPECIAL, &ret)) {
+
+	for (sep = strtok_r(tok, TOKSEP, &brk); sep;
+	     sep = strtok_r(NULL, TOKSEP, &brk)) {
+
+	    if (idx >= CMDLEN) {
+		idx *= 2;
+		if ((tokens = realloc(tokens, sizeof *tokens * idx)) == NULL)
+		    err(EXIT_FAILURE, "realloc");
+	    }
+
+	    if ((tokens[idx++] = strdup(sep)) == NULL)
+		err(EXIT_FAILURE, "strdup");
 	}
     }
-
-    free(str);
-}
-
-int
-parse_expr(void)
-{
-    char *line = NULL;
-    size_t linecap = 0;
-    ssize_t linelen;
-
-    if ((linelen = getline(&line, &linecap, stdin)) <= 0)
-	return -1;
-
-    if ((strncmp(line, "exit", 4)) == 0)
-	return -1;
-
-    printf("%s", line);
-    tokenize(line);
-
     
-    free(line);
-    return 0;
+    for (j = 0; j < idx; j++) {
+	printf("token: %s\n", tokens[j]);
+    }
+    
+    return tokens;
 }

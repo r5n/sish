@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "parse.h"
 #include "extern.h"
 
 static void usage(void);
@@ -24,7 +25,7 @@ main(int argc, char **argv)
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
-    if ((opts = malloc(sizeof(struct sish_opt))) == NULL) {
+    if ((opts = malloc(sizeof *opts)) == NULL) {
 	fprintf(stderr, "%s\n", strerror(errno));
 	exit(EXIT_FAILURE);
     }
@@ -54,9 +55,11 @@ main(int argc, char **argv)
 	opts->run = argv[0];
     }
 
+    n = 0;
+
     do {
 	printf("sish$ ");
-	n = parse_expr();
+	(void)parse();
     } while (n != -1);
 
     free(opts);
