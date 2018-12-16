@@ -16,6 +16,7 @@
 struct sish_command * command_new(int);
 char **tokenize(char *, int *);
 int parse_tokens(char **, int, struct sish_command *);
+void free_command(struct sish_command *);
 
 struct sish_command *
 parse(void)
@@ -46,6 +47,26 @@ parse(void)
     free(line);
     
     return comm;
+}
+
+void
+free_command(struct sish_command *comm)
+{
+    int i;
+    struct sish_command *head, *tmp;
+
+    head = comm;
+    while (head != NULL) {
+	tmp = head;
+	head = head->next;
+
+	free(tmp->command);
+	for (i = 0; i < tmp->argc; i++) {
+	    free(tmp->argv[i]);
+	}
+    }
+    head = NULL;
+    free(comm);
 }
 
 struct sish_command *

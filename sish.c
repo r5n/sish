@@ -73,10 +73,10 @@ main(int argc, char **argv)
 		printf("+ %s\n", comm->command);
 	    last_status = sish_execute(comm);
 	}
+	free_command(comm);
     }
 
     free(opts);
-    free(comm);
     sigaction(SIGINT, &intsa, NULL);
 }
 
