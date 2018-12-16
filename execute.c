@@ -1,7 +1,10 @@
+#include <sys/wait.h>
+
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "parse.h"
@@ -13,7 +16,7 @@ sish_execute(struct sish_command *comm)
     char *buf, **args;
     pid_t pid;
 
-    status = EXIT_FAILURE;
+    status = 0;
 
     if ((buf = malloc(sizeof *buf * BUFSIZ)) == NULL)
 	err(1, "malloc");
@@ -39,7 +42,7 @@ sish_execute(struct sish_command *comm)
 	free(args);
 	close(p[0]);
 
-	if (waitpid(pid, NULL, 0) < 0)
+	if (waitpid(pid, &status, 0) < 0)
 	    err(EXIT_FAILURE, "waitpid");
 
 	return status;
@@ -54,6 +57,8 @@ sish_execute(struct sish_command *comm)
 
 	status = execvp(comm->command, args);
 	
-	err(EXIT_FAILURE, "execvp");
+	fprintf(stderr, "%s: command not found\n", comm->command);
+	status = 127;
+	exit(EXIT_FAILURE);
     }
 }
