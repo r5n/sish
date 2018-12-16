@@ -2,12 +2,52 @@
 
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "parse.h"
+
+#define RD_FLAGS O_RDONLY
+#define WR_FLAGS O_WRONLY | O_TRUNC | O_CREAT
+#define AP_FLAGS O_WRONLY | O_APPEND
+#define DEFAULT_MODE 0644
+
+void
+setup_redirection(struct sish_command *comm, int *fd)
+{
+    switch(comm->conn) {
+    case IN:
+	if ((*fd = open(comm->next->command, RD_FLAGS)) == -1)
+	    err(EXIT_FAILURE, "open");
+
+	if (dup2(*fd, STDIN_FILENO) != STDIN_FILENO)
+	    err(1, "dup2 to stdin");
+
+	break;
+    case OUT:
+	if ((*fd = open(comm->next->command, WR_FLAGS, DEFAULT_MODE)) == -1)
+	    err(EXIT_FAILURE, "open");
+
+	if (dup2(*fd, STDOUT_FILENO) != STDOUT_FILENO)
+	    err(1, "dup2 to stdout");
+
+	break;
+    case APPEND:
+	printf("append case!\n");
+	if ((*fd = open(comm->next->command, AP_FLAGS, DEFAULT_MODE)) == -1)
+	    err(EXIT_FAILURE, "open");
+
+	if (dup2(*fd, STDOUT_FILENO) != STDOUT_FILENO)
+	    err(1, "dup2 to stdout");
+
+	break;
+    default:
+	return;
+    }
+}
 
 int
 sish_execute(struct sish_command *comm)
@@ -54,6 +94,8 @@ sish_execute(struct sish_command *comm)
 	    args[i] = comm->argv[i-1];
 	}
 	args[i] = NULL;
+
+	setup_redirection(comm, &(p[1]));
 
 	status = execvp(comm->command, args);
 	
