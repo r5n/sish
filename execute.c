@@ -46,8 +46,6 @@ sish_execute(struct sish_command *cmd)
     curr = cmd;
     fdout = fdin = -1;
 
-    print_command(cmd);
-
     for (i = 0; i < nc; curr = curr->next, i++) {
 	if (pipe(p) < 0)
 	    err(127, "pipe");
@@ -82,7 +80,6 @@ sish_execute(struct sish_command *cmd)
 
 	    (void)close(p[FIN]); /* close read end */
 
-	    printf("command: %s\n", curr->command);
 	    status = execvp(curr->command, curr->argv);
 	    fprintf(stderr, "%s: %s\n", curr->command, strerror(errno));
 	    exit(127);

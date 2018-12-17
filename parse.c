@@ -9,7 +9,7 @@
 #include "parse.h"
 #include "util.h"
 
-#define CMDLEN  16
+#define CMDLEN  32
 #define SEP     " \t"
 #define SPECIAL "&|<>\n"
 #define SYN_ERR "syntax error near unexpected token"
@@ -36,13 +36,6 @@ print_command(struct sish_command *comm)
 	if (tmp->append)
 	    printf("\tAPPEND to %s", tmp->stdout);	
 	switch (tmp->conn) {
-	case OUT:
-	    break;
-	case IN:
-	    break;
-	case APPEND:
-
-	    break;
 	case PIPE:
 	    printf("PIPE");
 	    break;
@@ -57,6 +50,20 @@ print_command(struct sish_command *comm)
     }
 }
 
+struct sish_command *
+parse_argv(char *command)
+{
+    int toklen;
+    char **tokens;
+    struct sish_command *cmd;
+
+    cmd = command_new(CMDLEN);
+    tokens = tokenize(command, &toklen);
+    if (parse_tokens(tokens, toklen, cmd) == -1)
+	return NULL;
+
+    return cmd;
+}
 
 struct sish_command *
 parse(void)
@@ -112,8 +119,10 @@ free_command(struct sish_command *comm)
 	    free(tmp->argv[i]);
 	}
     }
-    free(comm->stdin);
-    free(comm->stdout);
+    if (comm->stdin)
+	free(comm->stdin);
+    if (comm->stdout)
+	free(comm->stdout);
     head = NULL;
     free(comm);
 }
@@ -184,7 +193,6 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	return -1;
 
     for (i = 0; i < len; i++) {
-
 	if (i == len - 1) {
 	    if (strncmp(tokens[i], "\n", 1) != 0) {
 		fprintf(stderr, "%s: " SYN_ERR " `%s'\n",

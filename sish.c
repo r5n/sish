@@ -56,8 +56,22 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    if (argc == 1) {
-	opts->run = argv[0];
+    if (argc == 1 && opts->command == 1) {
+	if (asprintf(&(opts->run), "%s\n", argv[0]) == -1)
+	    err(127, "asprintf");
+	
+	if ((comm = parse_argv(opts->run)) == NULL)
+	    exit(127);
+
+	if (sish_builtin(comm) == 0) {
+	    if (opts->trace == 1)
+		printf("+ %s\n", comm->command);
+	    last_status = sish_execute(comm);
+	}
+
+	free(opts->run);
+	free_command(comm);
+	goto cleanup;
     }
 
     last_status = 0; /* default */
@@ -75,6 +89,7 @@ main(int argc, char **argv)
 	free_command(comm);
     }
 
+cleanup:    
     free(opts);
     sigaction(SIGINT, &intsa, NULL);
 }
