@@ -1,10 +1,38 @@
-sish -- a simple shell
-----------------------
+sish -- a simple hell
+---------------------
 
-TODO
-----
+Known Issues
+------------
 
-o	Signal handling in fork/exec.  Let child process decide how it
-	wants to handle SIGINT.
-o	ls -ld . > file1 -args should not run.
+1. I/O redirection along with pipes not handled correctly.
 
+       $ ls -ld > file | wc -l
+       0
+       $
+
+       sish$ ls -ld > file | wc -l
+       1
+       sish$
+
+2. `vim -u NONE &' doesn't properly run.  Calling daemon(3) to handle
+   background processes.
+
+3. Sets $SHELL to "sish", and not an actual path.
+
+4. `cd' without any arguments doesn't return error if $HOME unset.
+
+       $ unset HOME && ./sish
+       sish$ cd
+       sish$
+
+       $ unset HOME
+       $ cd
+       -bash: cd: HOME not set
+       $
+
+5. `stty tostop' not respected.
+
+       $ stty tostop && ./sish
+       sish$ ls &
+       file1 file2
+       ...

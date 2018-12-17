@@ -204,7 +204,7 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	
 	if (cmd) {
 	    if (strpbrk(tokens[i], SPECIAL) != NULL) { /* invalid */
-		fprintf(stderr, "1. %s: " SYN_ERR " `%s'\n",
+		fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
 			getprogname(),
 			(*tokens[i] == '\n' ? "newline" : tokens[i]));
 		return -1;
@@ -223,7 +223,7 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 
 	    if (strpbrk(tokens[i+1], SPECIAL) != NULL &&
 		(curr->conn != BACKGROUND)) {
-		fprintf(stderr, "2. %s: " SYN_ERR " `%s'\n",
+		fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
 			getprogname(),
 			(match(tokens[i+1], "\n") ? "newline" : tokens[i+1]));
 		return -1;
