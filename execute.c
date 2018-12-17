@@ -83,15 +83,15 @@ sish_execute(struct sish_command *cmd, int trace)
 	    if (dup2(prevfd, STDIN_FILENO) != STDIN_FILENO)
 	    	err(127, "dup2 stdin");
 
-	    if (curr->stdin) {
-		if ((fdin = open(curr->stdin, RD_FLAGS)) == -1)
+	    if (curr->input) {
+		if ((fdin = open(curr->input, RD_FLAGS)) == -1)
 		    err(127, "open");
 
 		if (dup2(fdin, STDIN_FILENO) != STDIN_FILENO)
 		    err(127, "dup2 stdin");
 	    }
-	    if (curr->stdout) {
-		if ((fdout = open(curr->stdout,
+	    if (curr->output) {
+		if ((fdout = open(curr->output,
 				  (curr->append == 1 ? AP_FLAGS : WR_FLAGS),
 				  DEFAULT_MODE)) == -1)
 		    err(127, "open");

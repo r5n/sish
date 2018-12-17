@@ -7,8 +7,8 @@ enum sish_conn { OUT, IN, APPEND, PIPE, BACKGROUND };
 struct sish_command {
     char **argv;
     char *command;
-    char *stdin;
-    char *stdout;
+    char *input;
+    char *output;
     int argc;
     int append;
     enum sish_conn conn;
