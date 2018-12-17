@@ -139,13 +139,15 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	    }
 	    curr->command = tokens[i];
 	    cmd = 0;
+	    curr->argv[0] = curr->command;
+	    idx = 1;
 	    continue;
 	}
 
 	if (strpbrk(tokens[i], SPECIAL) != NULL) {
 
 	    cmd = 1;
-	    next = command_new(len);
+	    next = command_new(len + 2);
 	    curr->argc = argc;
 	    
 	    if (i == len-1) {
@@ -167,6 +169,7 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	}
     }
 
+    curr->argv[idx] = NULL;
     curr->argc = argc;
     curr->next = NULL;
 
