@@ -10,7 +10,7 @@
 #include "parse.h"
 #include "extern.h"
 
-#define MAX_ARGLEN 16
+#define SISH_SHELL "SHELL=sish"
 
 static void usage(void);
 
@@ -26,6 +26,9 @@ main(int argc, char **argv)
     
     setprogname(argv[0]);
     last_status = 0;
+
+    if (putenv(SISH_SHELL) == -1)
+	err(127, "putenv");
 
     sa.sa_handler = SIG_IGN;
     sigemptyset(&sa.sa_mask);
