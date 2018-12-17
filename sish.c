@@ -64,7 +64,7 @@ main(int argc, char **argv)
 	if ((comm = parse_argv(opts->run)) == NULL)
 	    exit(127);
 
-	if (sish_builtin(comm, opts->trace) == 0) {
+	if (sish_builtin(comm, opts->trace, &last_status) == 0) {
 	    last_status = sish_execute(comm, opts->trace);
 	}
 
@@ -78,7 +78,7 @@ main(int argc, char **argv)
 	if ((comm = parse()) == NULL){
 	    continue;
 	}
-	if (sish_builtin(comm, opts->trace) == 0) {
+	if (sish_builtin(comm, opts->trace, &last_status) == 0) {
 	    last_status = sish_execute(comm, opts->trace);
 	}
 	free_command(comm);

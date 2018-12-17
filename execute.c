@@ -35,7 +35,7 @@ ncommands(struct sish_command *comm)
 int
 sish_execute(struct sish_command *cmd, int trace)
 {
-    int nc, status, prevfd, fdout, fdin, i, j;
+    int nc, prevfd, fdout, fdin, i, j, status, wstatus;
     int p[2];
     pid_t pid;
     sigset_t nmask, omask;
@@ -108,17 +108,21 @@ sish_execute(struct sish_command *cmd, int trace)
 
 	    if (curr->conn == BACKGROUND)
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-		if (daemon(1, 1) == -1) // macOS
+#pragma clang diagnostic ignored "-Wdeprecated" // macOS
+		if (daemon(1, 1) == -1)
 #pragma clang diagnostic pop
 		    err(127, "daemon");
 
 	    status = execvp(curr->command, curr->argv);
 	    fprintf(stderr, "%s: %s\n", curr->command, strerror(errno));
+	    last_status = 127;
 	    exit(127);
 	} else { /* parent */
-	    if (waitpid(pid, &status, 0) < 0)
+	    if (waitpid(pid, &wstatus, 0) < 0)
 		err(127, "waitpid");
+
+	    status = WEXITSTATUS(wstatus);
+
 	    (void)close(p[FOUT]);
 	    prevfd = p[FIN];
 	}

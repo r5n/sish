@@ -7,7 +7,7 @@ struct sish_opt {
     char *run;
 };
 
-int sish_builtin(struct sish_command *, int);
+int sish_builtin(struct sish_command *, int, int*);
 int sish_execute(struct sish_command *, int);
 
 #endif
