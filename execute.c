@@ -106,6 +106,13 @@ sish_execute(struct sish_command *cmd, int trace)
 
 	    (void)close(p[FIN]); /* close read end */
 
+	    if (curr->conn == BACKGROUND)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
+		if (daemon(1, 1) == -1) // macOS
+#pragma clang diagnostic pop
+		    err(127, "daemon");
+
 	    status = execvp(curr->command, curr->argv);
 	    fprintf(stderr, "%s: %s\n", curr->command, strerror(errno));
 	    exit(127);
