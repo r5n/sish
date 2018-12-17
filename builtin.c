@@ -29,7 +29,7 @@ sish_builtin(struct sish_command *comm)
 	if (comm->argc == 0)
 	    return 1;
 	
-	builtin_cd((comm->argv)[0]);
+	builtin_cd((comm->argv)[1]);
 	return 1;
     }
 

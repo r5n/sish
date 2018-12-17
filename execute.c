@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <sys/wait.h>
 
 #include <err.h>
@@ -11,13 +12,14 @@
 
 #include "parse.h"
 
+#define IN       0
+#define OUT      1
 #define RD_FLAGS O_RDONLY
 #define WR_FLAGS O_WRONLY | O_TRUNC | O_CREAT
 #define AP_FLAGS O_WRONLY | O_APPEND
 #define DEFAULT_MODE 0644
 
 extern int last_status;
-
 
 int
 ncommands(struct sish_command *comm)
@@ -33,56 +35,43 @@ ncommands(struct sish_command *comm)
 int
 sish_execute(struct sish_command *comm)
 {
-    int i, nc, rd, status;
-    int **fds;
-    char *buf;
-    pid_t *pids;
-    struct sish_command *tmp, *prev;
-    
+    int i, nc, status, prevfd;
+    int fd[2];
+    pid_t pid;
+    struct sish_command *tmp;
+
+    status = last_status;
     nc = ncommands(comm);
 
-    if ((pids = malloc(sizeof *pids * nc)) == NULL)
-	err(127, "malloc");
+    prevfd = STDIN_FILENO;
 
-    if ((fds = malloc(sizeof *fds * nc)) == NULL)
-	err(127, "malloc");
+    for (i = 0, tmp = comm; i < nc; i++, tmp = tmp->next) {
+	if (pipe(fd) < 0)
+	    err(127, "pipe");
 
-    if ((buf = malloc(BUFSIZ)) == NULL)
-	err(127, "malloc");
-
-    for (i = 0; i < nc; i++)
-	if ((fds[i] = malloc(sizeof *fds[i] * 2)) == NULL)
-	    err(127, "malloc");
-    
-    for (i = 0, tmp = comm, prev = NULL; i < nc;
-	 prev = tmp, tmp = tmp->next, i++) {
-
-	if ((pids[i] = fork()) < 0)
+	if ((pid = fork()) < 0)
 	    err(127, "fork");
 
-	if (pids[i] == 0) { /* child */
+	if (pid == 0) { /* child */
+	    if (dup2(prevfd, STDIN_FILENO) != STDIN_FILENO)
+		err(127, "dup2 stdin");
 
-	    if (prev && prev->conn != PIPE)
-		exit(EXIT_SUCCESS);
+	    if (tmp->conn == PIPE)
+		if (dup2(fd[OUT], STDOUT_FILENO) != STDOUT_FILENO)
+		    err(127, "dup2 stdout");
 
+	    close(fd[IN]);
 	    status = execvp(tmp->command, tmp->argv);
 	    err(127, "execvp");
 	} else { /* parent */
-	    if (waitpid(pids[i], &status, 0) < 0)
+	    
+	    if (waitpid(pid, &status, 0) < 0)
 		err(127, "waitpid");
+
+	    close(fd[OUT]);
+	    prevfd = fd[IN];
 	}
-	
     }
-
-    while ((rd = read(fds[nc-1][0], buf, BUFSIZ)) > 0)
-	if (write(STDOUT_FILENO, buf, rd) != rd)
-	    err(EXIT_FAILURE, "write");
-
-    for (i = 0; i < nc; i++)
-	free(fds[i]);
-    free(fds);
-    free(pids);
-    free(buf);
 
     return status;
 }

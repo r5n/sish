@@ -68,7 +68,7 @@ free_command(struct sish_command *comm)
 	head = head->next;
 
 	free(tmp->command);
-	for (i = 0; i < tmp->argc; i++) {
+	for (i = 1; i < tmp->argc + 1; i++) {
 	    free(tmp->argv[i]);
 	}
     }
