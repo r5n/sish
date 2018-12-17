@@ -82,7 +82,7 @@ parse(void)
 
     if ((len = getline(&line, &size, stdin)) == -1) {
 	if (errno)
-	    err(EXIT_FAILURE, "getline");
+	    err(127, "getline");
 
 	comm->command = "exit";
 	comm->stdin = NULL;
@@ -133,10 +133,10 @@ command_new(int arglen)
     struct sish_command *comm;
 
     if ((comm = malloc(sizeof *comm)) == NULL)
-	err(EXIT_FAILURE, "malloc");
+	err(127, "malloc");
 
     if ((comm->argv = calloc(arglen, sizeof *(comm->argv))) == NULL)
-	err(EXIT_FAILURE, "calloc");
+	err(127, "calloc");
 
     comm->command = NULL;
     comm->next = NULL;
@@ -277,12 +277,12 @@ tokenize(char *line, int *toklen)
     size = CMDLEN;
 
     if ((str = strdup(line)) == NULL)
-	err(EXIT_FAILURE, "strdup");
+	err(127, "strdup");
 
     tmp = str;
 
     if ((tokens = malloc(sizeof *tokens * size)) == NULL)
-	err(EXIT_FAILURE, "malloc");
+	err(127, "malloc");
 
     while (*str != '\0') {
 	n = strcspn(str, SPECIAL);
@@ -296,7 +296,7 @@ tokenize(char *line, int *toklen)
 	    grow(&tokens, &idx, &size);
 
 	    if ((tokens[idx++] = strdup(sep)) == NULL)
-		err(EXIT_FAILURE, "strdup");
+		err(127, "strdup");
 	}
 
 	grow(&tokens, &idx, &size);

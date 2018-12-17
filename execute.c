@@ -38,15 +38,30 @@ sish_execute(struct sish_command *cmd, int trace)
     int nc, status, prevfd, fdout, fdin, i, j;
     int p[2];
     pid_t pid;
+    sigset_t nmask, omask;
     struct sish_command *curr;
+    struct sigaction quitsa, sa;
 
     status = last_status;
     nc = ncommands(cmd);
     prevfd = STDIN_FILENO;
-    curr = cmd;
     fdout = fdin = -1;
 
-    for (i = 0; i < nc; curr = curr->next, i++) {
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGQUIT, &sa, &quitsa) == -1)
+	err(127, "sigaction");
+
+    sigemptyset(&nmask);
+    sigaddset(&nmask, SIGCHLD);
+    if (sigprocmask(SIG_BLOCK, &nmask, &omask) == -1) {
+	sigaction(SIGQUIT, &quitsa, NULL);
+	err(127, "sigprocmask");
+    }
+
+    for (i = 0, curr = cmd; i < nc; curr = curr->next, i++) {
 	if (pipe(p) < 0)
 	    err(127, "pipe");
 
@@ -107,6 +122,9 @@ sish_execute(struct sish_command *cmd, int trace)
 	(void)close(fdin);
     if (fdout != -1)
 	(void)close(fdout);
+
+    sigaction(SIGQUIT, &quitsa, NULL);
+    (void)sigprocmask(SIG_SETMASK, &omask, NULL);
 
     return status;
 }

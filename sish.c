@@ -33,7 +33,7 @@ main(int argc, char **argv)
 
     if ((opts = malloc(sizeof *opts)) == NULL) {
 	fprintf(stderr, "malloc: %s\n", strerror(errno));
-	exit(EXIT_FAILURE);
+	exit(127);
     }
 
     if (sigaction(SIGINT, &sa, &intsa) == -1)
@@ -64,7 +64,7 @@ main(int argc, char **argv)
 	if ((comm = parse_argv(opts->run)) == NULL)
 	    exit(127);
 
-	if (sish_builtin(comm) == 0) {
+	if (sish_builtin(comm, opts->trace) == 0) {
 	    last_status = sish_execute(comm, opts->trace);
 	}
 
@@ -78,7 +78,7 @@ main(int argc, char **argv)
 	if ((comm = parse()) == NULL){
 	    continue;
 	}
-	if (sish_builtin(comm) == 0) {
+	if (sish_builtin(comm, opts->trace) == 0) {
 	    last_status = sish_execute(comm, opts->trace);
 	}
 	free_command(comm);
@@ -87,11 +87,12 @@ main(int argc, char **argv)
 cleanup:    
     free(opts);
     sigaction(SIGINT, &intsa, NULL);
+    exit(last_status);
 }
 
 static void
 usage(void)
 {
     fprintf(stderr, "usage: %s [-x] [-c command]\n", getprogname());
-    exit(EXIT_FAILURE);
+    exit(127);
 }
