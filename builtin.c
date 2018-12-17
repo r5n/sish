@@ -12,7 +12,7 @@ extern int last_status;
 
 void builtin_cd(const char *, int);
 void builtin_echo(const char *, int);
-void builtin_exit(void, int);
+void builtin_exit(int);
 
 int
 sish_builtin(struct sish_command *comm, int trace)
@@ -43,8 +43,8 @@ sish_builtin(struct sish_command *comm, int trace)
 void
 builtin_cd(const char *path, int trace)
 {
-    if (trace)
-	printf("+ %s: %s\n", "cd", path);
+    if (trace == 1)
+	printf("%s: %s\n", "+ cd", path);
     
     if ((chdir(path)) == -1) {
 	fprintf(stderr, "cd: %s\n", strerror(errno));
@@ -54,8 +54,8 @@ builtin_cd(const char *path, int trace)
 void
 builtin_echo(const char *str, int trace)
 {
-    if (trace)
-	printf("+ %s %s\n", "echo", str);
+    if (trace == 1)
+	printf("%s %s\n", "+ echo", str);
     
     if (match(str, "$$")) {
 	printf("%ld", (long)getpid());
@@ -70,8 +70,8 @@ builtin_echo(const char *str, int trace)
 void
 builtin_exit(int trace)
 {
-    if (trace)
-	printf("+ %s\n", "+ exit");
+    if (trace == 1)
+	printf("%s\n", "+ exit");
     
     exit(EXIT_SUCCESS);
 }
