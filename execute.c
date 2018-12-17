@@ -35,7 +35,7 @@ ncommands(struct sish_command *comm)
 int
 sish_execute(struct sish_command *cmd)
 {
-    int i, nc, status, prevfd, fd, ex;
+    int nc, status, prevfd, fd, i;
     int p[2];
     pid_t pid;
     char *filename;
@@ -43,26 +43,14 @@ sish_execute(struct sish_command *cmd)
 
     status = last_status;
     nc = ncommands(cmd);
-    fd = -1;
-    ex = 1;
+    prevfd = fd = STDIN_FILENO;
+    curr = cmd;
 
-    prevfd = STDIN_FILENO;
-
-    for (i = 0, curr = cmd, prev = NULL; i < nc;
-	 i++, prev = curr, curr = curr->next) {
-
+    for (i = 0; i < nc; i++) {
+	prev = curr;
+	
 	if (pipe(p) < 0)
 	    err(127, "pipe");
-
-	if (prev)
-	    switch (prev->conn) {
-	    case IN: case OUT: case APPEND:
-		ex = 0;
-		break;
-	    default:
-		ex = 1;
-		break;
-	    }
 
 	if ((pid = fork()) < 0)
 	    err(127, "fork");
@@ -72,66 +60,47 @@ sish_execute(struct sish_command *cmd)
 	    if (dup2(prevfd, STDIN_FILENO) != STDIN_FILENO)
 		err(127, "dup2 stdin");
 
-	    switch (curr->conn) {
-	    case PIPE:		
+	    if (curr->conn == PIPE) {
 		if (dup2(p[FOUT], STDOUT_FILENO) != STDOUT_FILENO)
 		    err(127, "dup2 stdout");
-
-		break;
-
-	    case IN:
-		filename = curr->next->command;
-		if ((fd = open(filename, RD_FLAGS)) == -1)
-		    err(127, "open");
-
-		if (dup2(fd, STDIN_FILENO) != STDIN_FILENO)
-		    err(127, "dup2 stdin");
-
-		break;
-
-	    case OUT:
-		filename = curr->next->command;
-		if ((fd = open(filename, WR_FLAGS, DEFAULT_MODE)) == -1)
-		    err(127, "open");
-
-		(void)close(p[FOUT]); /* close write end -- set to fd */
-		
-		if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO)
-		    err(127, "dup2 stdout");
-
-		break;
-
-	    case APPEND:
-		filename = curr->next->command;
-		if ((fd = open(filename, AP_FLAGS, DEFAULT_MODE)) == -1)
-		    err(127, "open");
-
-		(void)close(p[FOUT]); /* close write end -- set to fd */
-
-		if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO)
-		    err(127, "dup2 stdout");
-
-		break;
-
-	    default:
-		break;
+	    } else {
+		for (; curr; i++, curr = curr->next) {
+		    if (curr->conn == IN) {
+			filename = curr->next->command;
+			if ((fd = open(filename, RD_FLAGS)) == -1)
+			    err(127, "open");
+			if (dup2(fd, STDIN_FILENO) != STDIN_FILENO)
+			    err(127, "dup2 stdin");
+		    } else if (curr->conn == OUT) {
+			filename = curr->next->command;
+			if ((fd = open(filename, WR_FLAGS, DEFAULT_MODE)) == -1)
+			    err(127, "open");
+			if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO)
+			    err(127, "dup2 stdout");
+		    } else if (curr->conn == APPEND) {
+			filename = curr->next->command;
+			if ((fd = open(filename, AP_FLAGS, DEFAULT_MODE)) == -1)
+			    err(127, "open");
+			if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO)
+			    err(127, "dup2 stdout");
+		    }
+		    else
+			break;
+		}
 	    }
 
 	    (void)close(p[FIN]); /* close read end */
 
-	    if (!ex) exit(0); /* curr->command refers to a file */
-	    
-	    status = execvp(curr->command, curr->argv);
-	    fprintf(stderr, "%s: %s\n", curr->command, strerror(errno));
+	    printf("command: %s\n", prev->command);
+	    status = execvp(prev->command, prev->argv);
+	    fprintf(stderr, "exec: %s: %s\n", prev->command, strerror(errno));
 	    exit(127);
-	} else { /* parent */
-
+	} else {
 	    if (waitpid(pid, &status, 0) < 0)
 		err(127, "waitpid");
 
-	    (void)close(p[FOUT]); /* close write end */
-	    prevfd = p[FIN];      /* save write end of child */
-
+	    (void)close(p[FOUT]);
+	    prevfd = p[FIN];
 	}
     }
 
