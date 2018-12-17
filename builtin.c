@@ -26,9 +26,6 @@ sish_builtin(struct sish_command *comm, int trace, int* last_status)
 	    return 1;
 	}
 	
-	if (comm->argc == 0)
-	    return 1;
-	
 	builtin_cd((comm->argv)[1], trace, last_status);
 	return 1;
     }
@@ -45,21 +42,19 @@ builtin_cd(const char *path, int trace, int *last_status)
 {
     const char *dir;
 
-    
+    dir = path;
     if (trace == 1)
-	printf("%s %s\n", "+ cd", path);
+	printf("%s %s\n", "+ cd", (dir ? dir : ""));
 
-    if (match(path, "\n")) {
+    if (!dir || match(dir, "\n")) {
 	if ((dir = getenv(HOME)) == NULL) {
 	    *last_status = 127;
 	    return;
 	}
-    } else
-	dir = path;
-    
+    }
     if ((chdir(dir)) == -1) {
 	*last_status = 127;
-	fprintf(stderr, "cd: %s\n", strerror(errno));
+	fprintf(stderr, "cd: %s: %s\n", dir, strerror(errno));
     }
 
     *last_status = 0;
