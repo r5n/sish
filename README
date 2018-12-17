@@ -36,3 +36,5 @@ Known Issues
        sish$ ls &
        file1 file2
        ...
+
+6. Builtin `echo' doesn't work well with I/O redirection or pipes.
