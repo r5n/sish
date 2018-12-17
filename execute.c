@@ -12,8 +12,8 @@
 
 #include "parse.h"
 
-#define IN       0
-#define OUT      1
+#define FIN      0
+#define FOUT     1
 #define RD_FLAGS O_RDONLY
 #define WR_FLAGS O_WRONLY | O_TRUNC | O_CREAT
 #define AP_FLAGS O_WRONLY | O_APPEND
@@ -35,18 +35,24 @@ ncommands(struct sish_command *comm)
 int
 sish_execute(struct sish_command *comm)
 {
-    int i, nc, status, prevfd;
-    int fd[2];
+    int i, nc, status, prevfd, fd;
+    int pfds[2];
     pid_t pid;
-    struct sish_command *tmp;
+    char *filename;
+    struct sish_command *tmp, *prev;
 
     status = last_status;
     nc = ncommands(comm);
+    fd = -1;
 
     prevfd = STDIN_FILENO;
 
-    for (i = 0, tmp = comm; i < nc; i++, tmp = tmp->next) {
-	if (pipe(fd) < 0)
+    print_command(comm);
+
+    for (i = 0, tmp = comm, prev = NULL; i < nc;
+	 i++, prev = tmp, tmp = tmp->next) {
+	
+	if (pipe(pfds) < 0)
 	    err(127, "pipe");
 
 	if ((pid = fork()) < 0)
@@ -56,20 +62,64 @@ sish_execute(struct sish_command *comm)
 	    if (dup2(prevfd, STDIN_FILENO) != STDIN_FILENO)
 		err(127, "dup2 stdin");
 
-	    if (tmp->conn == PIPE)
-		if (dup2(fd[OUT], STDOUT_FILENO) != STDOUT_FILENO)
-		    err(127, "dup2 stdout");
+	    if (tmp->next != NULL)
+		filename = tmp->next->command;
 
-	    close(fd[IN]);
+	    switch (tmp->conn) {
+	    case PIPE:
+		if (dup2(pfds[FOUT], STDOUT_FILENO) != STDOUT_FILENO)
+		    err(127, "dup2 stdout");
+		/* FALLTHROUGH */
+		
+	    case OUT:
+		close(pfds[FIN]);
+		if ((fd = open(filename, WR_FLAGS, DEFAULT_MODE)) == -1)
+		    err(127, "open");
+
+		if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO)
+		    err(127, "dup2 stdout");
+		break;
+
+	    case IN:
+		close(pfds[FOUT]);
+		if ((fd = open(filename, RD_FLAGS)) == -1)
+		    err(127, "open");
+
+		if (dup2(fd, STDIN_FILENO) != STDIN_FILENO)
+		    err(127, "dup2 stdin");
+		break;
+		
+	    case APPEND:
+		close(pfds[FIN]);
+		if ((fd = open(filename, AP_FLAGS, DEFAULT_MODE)) == -1)
+		    err(127, "open");
+
+		if (dup2(fd, STDOUT_FILENO) != STDOUT_FILENO)
+		    err(127, "dup2 stdout");
+		break;
+
+	    default:
+		close(pfds[FIN]);
+		break;
+	    }
+
+	    if (prev && (prev->conn == IN || prev->conn == OUT
+			 || prev->conn == APPEND)) {
+		printf("prev->command: %s\n", prev->command);
+		exit(EXIT_SUCCESS);
+	    }
+
 	    status = execvp(tmp->command, tmp->argv);
-	    err(127, "execvp");
+	    fprintf(stderr, "exec: %s: %s\n", tmp->command, strerror(errno));
+	    exit(127);
 	} else { /* parent */
 	    
 	    if (waitpid(pid, &status, 0) < 0)
 		err(127, "waitpid");
 
-	    close(fd[OUT]);
-	    prevfd = fd[IN];
+	    close(fd);
+	    close(pfds[FOUT]);
+	    prevfd = pfds[FIN];
 	}
     }
 

@@ -15,5 +15,6 @@ struct sish_command {
 struct sish_command *command_new(int);
 struct sish_command *parse(void);
 void free_command(struct sish_command *);
+void print_command(struct sish_command *);
 
 #endif

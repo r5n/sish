@@ -34,7 +34,7 @@ sish_builtin(struct sish_command *comm)
     }
 
     if (match(comm->command, "echo")) {
-	builtin_echo((comm->argv)[0]);
+	builtin_echo((comm->argv)[1]);
 	return 1;
     }
     return 0;

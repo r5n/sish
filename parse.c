@@ -20,6 +20,42 @@ int parse_tokens(char **, int, struct sish_command *);
 void free_command(struct sish_command *);
 int validate(struct sish_command *);
 
+void
+print_command(struct sish_command *comm)
+{
+    int i;
+    struct sish_command *tmp;
+
+    for (tmp = comm; tmp; tmp = tmp->next) {
+	printf("%s ", tmp->command);
+	for (i = 1; i < tmp->argc + 1; i++) {
+	    printf("%s ", tmp->argv[i]);
+	}
+	switch (tmp->conn) {
+	case OUT:
+	    printf("OUT");
+	    break;
+	case IN:
+	    printf("IN");
+	    break;
+	case APPEND:
+	    printf("APPEND");
+	    break;
+	case PIPE:
+	    printf("PIPE");
+	    break;
+	case BACKGROUND:
+	    printf("BACKGROUND");
+	    break;
+	default:
+	    printf(".");
+	    break;
+	}
+	printf("\n");
+    }
+}
+
+
 struct sish_command *
 parse(void)
 {
@@ -98,22 +134,32 @@ command_new(int arglen)
 enum sish_conn
 get_connective(char curr, char next, int *consumed)
 {
+    enum sish_conn typ;
+    
     switch (curr) {
+	printf("curr: %c\n", curr);
     case '<':
-	return IN;
+	typ = IN;
+	break;
     case '>':
-	if (strncmp(&next, ">", 1) == 0) {
-	    (*consumed)++;
-	    return APPEND;
+	if (next == '>') {
+	    *consumed += 1;
+	    typ = APPEND;
+	    break;
 	}
-	return OUT;
+	typ = OUT;
+	break;
     case '|':
-	return PIPE;
+	typ = PIPE;
+	break;
     case '&':
-	return BACKGROUND;
+	typ = BACKGROUND;
+	break;
     default:
-	return -1;
+	typ = -1;
+	break;
     }
+    return typ;
 }
 
 int
