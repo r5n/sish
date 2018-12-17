@@ -233,6 +233,7 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 		break;
 	    case APPEND:
 		cmd = 0;
+		curr->append = 1;
 		curr->stdout = tokens[i+1];
 		i++;
 		break;
