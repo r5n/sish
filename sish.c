@@ -25,6 +25,7 @@ main(int argc, char **argv)
     struct sish_command *comm;
     
     setprogname(argv[0]);
+    last_status = 0;
 
     sa.sa_handler = SIG_IGN;
     sigemptyset(&sa.sa_mask);
@@ -64,9 +65,7 @@ main(int argc, char **argv)
 	    exit(127);
 
 	if (sish_builtin(comm) == 0) {
-	    if (opts->trace == 1)
-		printf("+ %s\n", comm->command);
-	    last_status = sish_execute(comm);
+	    last_status = sish_execute(comm, opts->trace);
 	}
 
 	free(opts->run);
@@ -74,17 +73,13 @@ main(int argc, char **argv)
 	goto cleanup;
     }
 
-    last_status = 0; /* default */
-
     for (;;) {
 	printf("sish$ ");
 	if ((comm = parse()) == NULL){
 	    continue;
 	}
 	if (sish_builtin(comm) == 0) {
-	    if (opts->trace == 1)
-		printf("+ %s\n", comm->command);
-	    last_status = sish_execute(comm);
+	    last_status = sish_execute(comm, opts->trace);
 	}
 	free_command(comm);
     }

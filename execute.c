@@ -33,9 +33,9 @@ ncommands(struct sish_command *comm)
 }
 
 int
-sish_execute(struct sish_command *cmd)
+sish_execute(struct sish_command *cmd, int trace)
 {
-    int nc, status, prevfd, fdout, fdin, i;
+    int nc, status, prevfd, fdout, fdin, i, j;
     int p[2];
     pid_t pid;
     struct sish_command *curr;
@@ -54,6 +54,17 @@ sish_execute(struct sish_command *cmd)
 	    err(127, "fork");
 
 	if (pid == 0) { /* child */
+
+	    if (trace == 1){
+		fflush(stdout);
+		printf("+ %s", curr->command);
+		for (j = 1; j < curr->argc + 1; j++) {
+		    if (curr->argv[j] != NULL)
+			printf(" %s", curr->argv[j]);
+		}
+		printf("\n");
+	    }
+	    
 	    if (dup2(prevfd, STDIN_FILENO) != STDIN_FILENO)
 	    	err(127, "dup2 stdin");
 
@@ -86,7 +97,6 @@ sish_execute(struct sish_command *cmd)
 	} else { /* parent */
 	    if (waitpid(pid, &status, 0) < 0)
 		err(127, "waitpid");
-
 	    (void)close(p[FOUT]);
 	    prevfd = p[FIN];
 	}
