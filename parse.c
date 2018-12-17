@@ -31,15 +31,17 @@ print_command(struct sish_command *comm)
 	for (i = 1; i < tmp->argc + 1; i++) {
 	    printf("%s ", tmp->argv[i]);
 	}
+	printf("\tOUT to %s", tmp->stdout);
+	printf("\tIN from %s", tmp->stdin);
+	if (tmp->append)
+	    printf("\tAPPEND to %s", tmp->stdout);	
 	switch (tmp->conn) {
 	case OUT:
-	    printf("OUT");
 	    break;
 	case IN:
-	    printf("IN");
 	    break;
 	case APPEND:
-	    printf("APPEND");
+
 	    break;
 	case PIPE:
 	    printf("PIPE");
@@ -76,6 +78,8 @@ parse(void)
 	    err(EXIT_FAILURE, "getline");
 
 	comm->command = "exit";
+	comm->stdin = NULL;
+	comm->stdout = NULL;
 	comm->argc = 0;
 	comm->argv = NULL;
 	comm->next = NULL;
@@ -108,6 +112,8 @@ free_command(struct sish_command *comm)
 	    free(tmp->argv[i]);
 	}
     }
+    free(comm->stdin);
+    free(comm->stdout);
     head = NULL;
     free(comm);
 }
@@ -127,6 +133,8 @@ command_new(int arglen)
     comm->next = NULL;
     comm->conn = -1;
     comm->argc = 0;
+    comm->append = 0;
+    comm->stdin = comm->stdout = NULL;
 
     return comm;
 }
@@ -176,6 +184,16 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	return -1;
 
     for (i = 0; i < len; i++) {
+
+	if (i == len - 1) {
+	    if (strncmp(tokens[i], "\n", 1) != 0) {
+		fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
+			getprogname(), tokens[i]);
+		return -1;
+	    }
+	    break;
+	}
+	
 	if (cmd) {
 	    if (strpbrk(tokens[i], SPECIAL) != NULL) { /* invalid */
 		fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
@@ -191,23 +209,39 @@ parse_tokens(char **tokens, int len, struct sish_command *comm)
 	}
 
 	if (strpbrk(tokens[i], SPECIAL) != NULL) {
-
 	    cmd = 1;
-	    next = command_new(len + 2);
 	    curr->argc = argc;
-	    
-	    if (i == len-1) {
-		if (strncmp(tokens[i], "\n", 1) != 0) {
-		    fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
-			    getprogname(), tokens[i]);
-		    return -1;
-		}
-		break;
+	    curr->conn = get_connective(tokens[i][0], tokens[i+1][0], &i);
+
+	    if (strpbrk(tokens[i+1], SPECIAL) != NULL) {
+		fprintf(stderr, "%s: " SYN_ERR " `%s'\n",
+			getprogname(),
+			(match(tokens[i+1], "\n") ? "newline" : tokens[i+1]));
+		return -1;
 	    }
 
-	    curr->conn = get_connective(tokens[i][0], tokens[i+1][0], &i);
-	    curr->next = next;
-	    curr = next;
+	    switch (curr->conn) {
+	    case IN:
+		cmd = 0;
+		curr->stdin = tokens[i+1];
+		i++;
+		break;
+	    case OUT:
+		cmd = 0;
+		curr->stdout = tokens[i+1];
+		i++;
+		break;
+	    case APPEND:
+		cmd = 0;
+		curr->stdout = tokens[i+1];
+		i++;
+		break;
+	    default:
+		next = command_new(len + 2);
+		curr->next = next;
+		curr = next;
+		break;
+	    }
 	} else {
 	    curr->argv[idx] = tokens[i];
 	    argc += 1;
